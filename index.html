@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Cup 2026 Sweepstake Draw</title>
+<style>
+  :root {
+    --green-dark: #0b3b2e;
+    --green-pitch: #1b6b43;
+    --gold: #d4a24c;
+    --gold-light: #f2d89a;
+    --cream: #fbf7ee;
+    --ink: #0f1a14;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(ellipse at top, #145138 0%, var(--green-dark) 60%, #051f17 100%);
+    color: var(--cream);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 80px; }
+  header { text-align: center; padding: 18px 0 26px; }
+  h1 { font-size: clamp(22px, 4vw, 34px); margin: 0 0 6px; letter-spacing: 1px; }
+  h1 .accent { color: var(--gold-light); }
+  .sub { color: var(--gold-light); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; }
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(212,162,76,0.35);
+    border-radius: 14px; padding: 20px; margin: 18px 0;
+    backdrop-filter: blur(4px);
+  }
+  .card h2 {
+    margin: 0 0 14px; font-size: 18px; color: var(--gold-light);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .players-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;
+  }
+  .players-grid label {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 8px;
+    border: 1px solid rgba(212,162,76,0.2);
+  }
+  .players-grid label .num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--gold); color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; flex-shrink: 0;
+  }
+  .players-grid input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--cream); font-size: 15px; font-family: inherit;
+  }
+  .players-grid input::placeholder { color: rgba(251,247,238,0.35); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+  .field label { color: var(--gold-light); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+  .field input[type="datetime-local"] {
+    background: rgba(0,0,0,0.3); color: var(--cream);
+    border: 1px solid rgba(212,162,76,0.35); border-radius: 8px;
+    padding: 10px 12px; font-size: 15px; font-family: inherit;
+  }
+
+  button.cta, button.secondary {
+    cursor: pointer; font-family: inherit; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; border: none; border-radius: 10px;
+    padding: 14px 28px; font-size: 15px;
+    transition: transform .15s, box-shadow .15s, opacity .15s;
+  }
+  button.cta {
+    background: linear-gradient(135deg, var(--gold), #c08838);
+    color: var(--ink); box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  }
+  button.cta:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,0.5); }
+  button.cta:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  button.secondary {
+    background: rgba(255,255,255,0.08); color: var(--cream);
+    border: 1px solid rgba(212,162,76,0.4);
+  }
+  button.secondary:hover { background: rgba(255,255,255,0.14); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+
+  /* Pots view */
+  .pots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .pots { grid-template-columns: repeat(2, 1fr); } }
+  .pot {
+    background: rgba(0,0,0,0.28); border: 1px solid rgba(212,162,76,0.3);
+    border-radius: 12px; padding: 12px; min-height: 280px;
+  }
+  .pot-title {
+    color: var(--gold-light); font-weight: 700; text-align: center;
+    font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(212,162,76,0.25);
+  }
+  .pot ul { list-style: none; margin: 0; padding: 0; }
+  .pot li {
+    padding: 5px 8px; margin: 2px 0; border-radius: 6px;
+    font-size: 14px; transition: all .3s ease;
+  }
+  .pot li.drawn {
+    background: rgba(212,162,76,0.15); color: rgba(251,247,238,0.4);
+    text-decoration: line-through;
+  }
+  .pot li.picking {
+    animation: pulse 0.6s ease-in-out infinite alternate;
+    background: rgba(212,162,76,0.4); color: var(--ink); font-weight: 700;
+  }
+  @keyframes pulse {
+    from { transform: scale(1); } to { transform: scale(1.06); }
+  }
+  .pot li.just-picked {
+    background: var(--gold); color: var(--ink); font-weight: 700;
+    animation: flash 0.6s ease-out;
+  }
+  @keyframes flash {
+    0% { transform: scale(1.3); box-shadow: 0 0 30px var(--gold); }
+    100% { transform: scale(1); box-shadow: none; }
+  }
+
+  /* Countdown */
+  .countdown-stage {
+    text-align: center; padding: 40px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .countdown-time {
+    font-size: clamp(60px, 14vw, 120px);
+    font-weight: 800; color: var(--gold-light);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  .countdown-label {
+    color: var(--cream); font-size: 14px;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .player-list {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin-top: 20px;
+  }
+  .player-chip {
+    background: rgba(212,162,76,0.2); border: 1px solid rgba(212,162,76,0.4);
+    color: var(--cream); padding: 6px 14px; border-radius: 20px;
+    font-size: 14px; font-weight: 600;
+  }
+
+  /* Stage */
+  .stage {
+    text-align: center; padding: 30px 16px; min-height: 160px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  }
+  .stage .player-name {
+    font-size: clamp(28px, 6vw, 48px); font-weight: 800;
+    color: var(--cream); letter-spacing: 1px;
+  }
+  .stage .reveal-team {
+    font-size: clamp(22px, 5vw, 38px); color: var(--gold-light); font-weight: 700;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .4s, transform .4s;
+  }
+  .stage .reveal-team.show { opacity: 1; transform: translateY(0); }
+  .stage .pot-label {
+    color: var(--gold-light); font-size: 12px;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+
+  /* Results */
+  .results-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px;
+  }
+  .player-card {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(212,162,76,0.35);
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .player-card .name {
+    color: var(--gold-light); font-weight: 700; margin-bottom: 6px;
+    padding-bottom: 6px; border-bottom: 1px solid rgba(212,162,76,0.2); font-size: 16px;
+  }
+  .player-card ol { margin: 0; padding-left: 22px; }
+  .player-card li { padding: 2px 0; color: var(--cream); }
+
+  textarea.copy, .url-display {
+    width: 100%; min-height: 80px;
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(212,162,76,0.3);
+    color: var(--cream); border-radius: 8px; padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; resize: vertical; word-break: break-all;
+  }
+  textarea.copy { min-height: 180px; }
+
+  .hidden { display: none !important; }
+  .small { font-size: 12px; color: rgba(251,247,238,0.55); text-align: center; margin-top: 8px; }
+  .note { font-size: 13px; color: var(--gold-light); text-align: center; padding: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="accent">⚽</span> World Cup 2026 Sweepstake <span class="accent">⚽</span></h1>
+    <div class="sub">Tiered Draw · 12 Players · 4 Teams Each</div>
+  </header>
+
+  <!-- ============ HOST SETUP ============ -->
+  <section id="setup" class="card hidden">
+    <h2>Set up the draw</h2>
+    <div class="players-grid" id="playersGrid"></div>
+    <div class="field">
+      <label for="startTime">Scheduled draw time (your local time)</label>
+      <input type="datetime-local" id="startTime">
+    </div>
+    <div class="actions">
+      <button class="cta" id="generateBtn">Generate share link</button>
+      <button class="secondary" id="previewBtn">Run a test draw now</button>
+    </div>
+    <div class="small">Share the link in the group chat. Everyone who opens it sees the same draw, synchronised to the scheduled time.</div>
+  </section>
+
+  <!-- ============ HOST: SHARE LINK ============ -->
+  <section id="shareLink" class="card hidden">
+    <h2>Share this link</h2>
+    <div class="url-display" id="shareUrl"></div>
+    <div class="actions">
+      <button class="cta" id="copyUrlBtn">Copy link</button>
+      <button class="secondary" id="testAsViewerBtn">Open as viewer</button>
+      <button class="secondary" id="backToSetupBtn">Edit setup</button>
+    </div>
+    <div class="note">⏰ Tell everyone to open this URL <strong>before</strong> the scheduled time. Late joiners will still see the right state — the draw self-syncs.</div>
+  </section>
+
+  <!-- ============ VIEWER: COUNTDOWN ============ -->
+  <section id="countdownScreen" class="card hidden">
+    <h2>Draw starting soon</h2>
+    <div class="countdown-stage">
+      <div class="countdown-label">Draw begins in</div>
+      <div class="countdown-time" id="countdownTime">--:--</div>
+      <div class="countdown-label" id="scheduledLabel"></div>
+      <div class="player-list" id="playerList"></div>
+    </div>
+  </section>
+
+  <!-- ============ DRAW ============ -->
+  <section id="drawScreen" class="card hidden">
+    <h2>Live draw</h2>
+    <div class="stage">
+      <div class="pot-label" id="potLabel">—</div>
+      <div class="player-name" id="currentPlayer">—</div>
+      <div class="reveal-team" id="revealTeam">…</div>
+    </div>
+    <div class="pots" id="potsView"></div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="results" class="card hidden">
+    <h2>Final allocation</h2>
+    <div class="results-grid" id="resultsGrid"></div>
+    <h2 style="margin-top:24px">WhatsApp-ready text</h2>
+    <textarea class="copy" id="copyBox" readonly></textarea>
+    <div class="actions">
+      <button class="cta" id="copyBtn">Copy to clipboard</button>
+      <button class="secondary" id="restartBtn">Set up another draw</button>
+    </div>
+  </section>
+</div>
+
+<script>
+// ============ TEAM POOL ============
+// Pots tiered by FIFA World Ranking (April 2026) — 48 qualified teams sorted top to bottom.
+const POTS = {
+  "Pot 1 — Top Seeds":  ["France","Spain","Argentina","England","Portugal","Brazil","Netherlands","Morocco","Belgium","Germany","Croatia","Colombia"],
+  "Pot 2 — Strong":     ["Senegal","Mexico","USA","Uruguay","Japan","Switzerland","Iran","Türkiye","Ecuador","Austria","South Korea","Australia"],
+  "Pot 3 — Mid":        ["Algeria","Egypt","Canada","Norway","Panama","Ivory Coast","Sweden","Paraguay","Czechia","Scotland","Tunisia","DR Congo"],
+  "Pot 4 — Outsiders":  ["Uzbekistan","Qatar","Iraq","South Africa","Saudi Arabia","Jordan","Bosnia & Herzegovina","Cape Verde","Ghana","Curaçao","Haiti","New Zealand"]
+};
+const POT_NAMES = Object.keys(POTS);
+const N_PLAYERS = 12;
+
+// Animation pacing (deterministic across browsers)
+const FLICKER_MS = 120;
+const FLICKERS_PER_PICK = 6;
+const REVEAL_HOLD_MS = 900;            // after settle, before next pick starts
+const PICK_TOTAL_MS = FLICKER_MS * FLICKERS_PER_PICK + 700 + REVEAL_HOLD_MS; // ~2.4s/pick
+const POT_BREAK_MS = 1500;             // pause between pots
+const TOTAL_PICKS = N_PLAYERS * POT_NAMES.length; // 48
+
+// ============ SEEDED RNG (mulberry32) ============
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function() {
+    t = (t + 0x6D2B79F5) >>> 0;
+    let x = t;
+    x = Math.imul(x ^ (x >>> 15), x | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(arr, rng) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ============ URL ENCODING ============
+// Format: #p=Alice|Bob|...&t=ISO&s=seedHex
+function encodeState({ players, startTime, seed }) {
+  const params = new URLSearchParams();
+  params.set('p', players.map(encodeURIComponent).join('|'));
+  params.set('t', startTime);
+  params.set('s', seed.toString(16));
+  return '#' + params.toString();
+}
+function decodeState() {
+  if (!location.hash || location.hash.length < 2) return null;
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (!params.has('p') || !params.has('t') || !params.has('s')) return null;
+  try {
+    const players = params.get('p').split('|').map(decodeURIComponent);
+    const startTime = params.get('t');
+    const seed = parseInt(params.get('s'), 16);
+    if (players.length !== N_PLAYERS) return null;
+    if (isNaN(seed)) return null;
+    if (isNaN(Date.parse(startTime))) return null;
+    return { players, startTime, seed };
+  } catch (e) { return null; }
+}
+
+// ============ DRAW PLAN (deterministic from seed + players) ============
+function buildDrawPlan(players, seed) {
+  const rng = mulberry32(seed);
+  const playerOrder = seededShuffle(players, rng);
+  const potShuffles = {};
+  POT_NAMES.forEach(pn => { potShuffles[pn] = seededShuffle(POTS[pn], rng); });
+
+  const queue = [];
+  POT_NAMES.forEach((pn, potIdx) => {
+    playerOrder.forEach((player, i) => {
+      queue.push({ pot: pn, potIdx, player, team: potShuffles[pn][i] });
+    });
+  });
+  return { playerOrder, potShuffles, queue };
+}
+
+// ============ HOST SETUP ============
+function initHostSetup() {
+  const grid = document.getElementById('playersGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < N_PLAYERS; i++) {
+    const label = document.createElement('label');
+    label.innerHTML = `<span class="num">${i+1}</span>
+      <input type="text" placeholder="Player ${i+1}" maxlength="24">`;
+    grid.appendChild(label);
+  }
+  // Default scheduled time: 1 hour from now, rounded to next 15min
+  const d = new Date(Date.now() + 60 * 60 * 1000);
+  d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15);
+  d.setSeconds(0); d.setMilliseconds(0);
+  document.getElementById('startTime').value = toLocalISOString(d);
+
+  document.getElementById('setup').classList.remove('hidden');
+}
+function toLocalISOString(d) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function readSetup() {
+  const inputs = document.querySelectorAll('#playersGrid input');
+  const names = [];
+  const seen = new Set();
+  inputs.forEach((inp, i) => {
+    let n = inp.value.trim();
+    if (!n) n = `Player ${i+1}`;
+    let base = n, k = 2;
+    while (seen.has(n)) { n = `${base} (${k++})`; }
+    seen.add(n);
+    names.push(n);
+  });
+  const startLocal = document.getElementById('startTime').value;
+  if (!startLocal) return null;
+  // Convert local datetime-local to UTC ISO
+  const startTime = new Date(startLocal).toISOString();
+  const seed = Math.floor(Math.random() * 0xFFFFFFFF);
+  return { players: names, startTime, seed };
+}
+
+document.getElementById('generateBtn').addEventListener('click', () => {
+  const state = readSetup();
+  if (!state) { alert('Please pick a scheduled time.'); return; }
+  const hash = encodeState(state);
+  const url = location.origin + location.pathname + hash;
+  document.getElementById('shareUrl').textContent = url;
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('shareLink').classList.remove('hidden');
+  document.getElementById('testAsViewerBtn').onclick = () => {
+    location.href = url;
+  };
+});
+
+document.getElementById('previewBtn').addEventListener('click', () => {
+  const inputs = document.querySelectorAll('#playersGrid input');
+  const names = [];
+  const seen = new Set();
+  inputs.forEach((inp, i) => {
+    let n = inp.value.trim();
+    if (!n) n = `Player ${i+1}`;
+    let base = n, k = 2;
+    while (seen.has(n)) { n = `${base} (${k++})`; }
+    seen.add(n);
+    names.push(n);
+  });
+  // Preview: run immediately with a random seed, no scheduling
+  const state = {
+    players: names,
+    startTime: new Date(Date.now() + 1000).toISOString(),
+    seed: Math.floor(Math.random() * 0xFFFFFFFF)
+  };
+  document.getElementById('setup').classList.add('hidden');
+  startViewerFlow(state);
+});
+
+document.getElementById('copyUrlBtn').addEventListener('click', async () => {
+  const text = document.getElementById('shareUrl').textContent;
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const r = document.createRange();
+    r.selectNode(document.getElementById('shareUrl'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(r);
+    document.execCommand('copy');
+  }
+  const btn = document.getElementById('copyUrlBtn');
+  const old = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = old, 1500);
+});
+
+document.getElementById('backToSetupBtn').addEventListener('click', () => {
+  document.getElementById('shareLink').classList.add('hidden');
+  document.getElementById('setup').classList.remove('hidden');
+});
+
+// ============ VIEWER FLOW ============
+let currentState = null;
+let currentPlan = null;
+
+function startViewerFlow(state) {
+  currentState = state;
+  currentPlan = buildDrawPlan(state.players, state.seed);
+
+  // Pre-render pots view
+  renderPotsView();
+
+  const startMs = Date.parse(state.startTime);
+  const now = Date.now();
+
+  if (now < startMs) {
+    showCountdown(startMs);
+  } else {
+    showDraw(startMs);
+  }
+}
+
+function showCountdown(startMs) {
+  const cd = document.getElementById('countdownScreen');
+  cd.classList.remove('hidden');
+
+  const label = document.getElementById('scheduledLabel');
+  const d = new Date(startMs);
+  label.textContent = `Scheduled for ${d.toLocaleString(undefined, {
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })}`;
+
+  // Player chips
+  const list = document.getElementById('playerList');
+  list.innerHTML = '';
+  currentState.players.forEach(p => {
+    const chip = document.createElement('span');
+    chip.className = 'player-chip';
+    chip.textContent = p;
+    list.appendChild(chip);
+  });
+
+  function tick() {
+    const remaining = startMs - Date.now();
+    if (remaining <= 0) {
+      cd.classList.add('hidden');
+      showDraw(startMs);
+      return;
+    }
+    document.getElementById('countdownTime').textContent = formatRemaining(remaining);
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function formatRemaining(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  const pad = n => String(n).padStart(2, '0');
+  if (days > 0) return `${days}d ${pad(hours)}h ${pad(mins)}m`;
+  if (hours > 0) return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+  return `${pad(mins)}:${pad(secs)}`;
+}
+
+function renderPotsView() {
+  const wrap = document.getElementById('potsView');
+  wrap.innerHTML = '';
+  POT_NAMES.forEach(pn => {
+    const div = document.createElement('div');
+    div.className = 'pot';
+    div.innerHTML = `<div class="pot-title">${pn}</div><ul></ul>`;
+    const ul = div.querySelector('ul');
+    POTS[pn].forEach(team => {
+      const li = document.createElement('li');
+      li.textContent = team;
+      li.dataset.team = team;
+      li.dataset.pot = pn;
+      ul.appendChild(li);
+    });
+    wrap.appendChild(div);
+  });
+}
+
+// Compute the exact ms offset (from startMs) at which pick N begins
+function pickStartOffset(idx) {
+  // Add a pot break between pots
+  const potBreaks = Math.floor(idx / N_PLAYERS) * POT_BREAK_MS;
+  return idx * PICK_TOTAL_MS + potBreaks;
+}
+
+function showDraw(startMs) {
+  document.getElementById('drawScreen').classList.remove('hidden');
+
+  // Apply all picks that should already be "done" (catch-up for late joiners)
+  const elapsed = Date.now() - startMs;
+  const allocation = {};
+  currentPlan.playerOrder.forEach(p => allocation[p] = []);
+
+  let completedIdx = -1;
+  for (let i = 0; i < TOTAL_PICKS; i++) {
+    const settleOffset = pickStartOffset(i) + FLICKER_MS * FLICKERS_PER_PICK;
+    if (elapsed >= settleOffset + REVEAL_HOLD_MS) {
+      completedIdx = i;
+    } else {
+      break;
+    }
+  }
+  // Mark completed picks on the pot board + record allocation
+  for (let i = 0; i <= completedIdx; i++) {
+    const item = currentPlan.queue[i];
+    allocation[item.player].push(item.team);
+    const li = document.querySelector(
+      `#potsView li[data-pot="${CSS.escape(item.pot)}"][data-team="${CSS.escape(item.team)}"]`
+    );
+    if (li) li.classList.add('drawn');
+  }
+
+  // If everything done, jump to results
+  if (completedIdx >= TOTAL_PICKS - 1) {
+    showResults(allocation);
+    return;
+  }
+
+  // Schedule the next pick
+  scheduleNextPick(startMs, completedIdx + 1, allocation);
+}
+
+function scheduleNextPick(startMs, idx, allocation) {
+  if (idx >= TOTAL_PICKS) {
+    showResults(allocation);
+    return;
+  }
+  const nextStartAt = startMs + pickStartOffset(idx);
+  const delay = Math.max(0, nextStartAt - Date.now());
+  setTimeout(() => runPick(startMs, idx, allocation), delay);
+}
+
+function runPick(startMs, idx, allocation) {
+  const item = currentPlan.queue[idx];
+
+  // Update stage
+  document.getElementById('potLabel').textContent = item.pot;
+  document.getElementById('currentPlayer').textContent = item.player;
+  const revealEl = document.getElementById('revealTeam');
+  revealEl.textContent = '';
+  revealEl.classList.remove('show');
+
+  const potSel = `#potsView li[data-pot="${CSS.escape(item.pot)}"]`;
+  const remaining = Array.from(document.querySelectorAll(`${potSel}:not(.drawn)`));
+
+  // Flicker
+  let flickers = 0;
+  // Use a deterministic flicker pattern from the seed + idx
+  const rng = mulberry32((currentState.seed ^ (idx * 0x9E3779B1)) >>> 0);
+  const flickerInterval = setInterval(() => {
+    remaining.forEach(li => li.classList.remove('picking'));
+    if (flickers < FLICKERS_PER_PICK) {
+      const pick = remaining[Math.floor(rng() * remaining.length)];
+      if (pick) pick.classList.add('picking');
+      flickers++;
+    } else {
+      clearInterval(flickerInterval);
+      remaining.forEach(li => li.classList.remove('picking'));
+      const li = document.querySelector(
+        `${potSel}[data-team="${CSS.escape(item.team)}"]`
+      );
+      if (li) {
+        li.classList.add('just-picked');
+        setTimeout(() => {
+          li.classList.remove('just-picked');
+          li.classList.add('drawn');
+        }, 700);
+      }
+      revealEl.textContent = item.team;
+      requestAnimationFrame(() => revealEl.classList.add('show'));
+      allocation[item.player].push(item.team);
+
+      // Schedule next pick based on absolute timing (self-syncing)
+      scheduleNextPick(startMs, idx + 1, allocation);
+    }
+  }, FLICKER_MS);
+}
+
+function showResults(allocation) {
+  document.getElementById('drawScreen').classList.add('hidden');
+  document.getElementById('results').classList.remove('hidden');
+
+  const rg = document.getElementById('resultsGrid');
+  rg.innerHTML = '';
+  currentPlan.playerOrder.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'player-card';
+    card.innerHTML = `<div class="name">${p}</div><ol>${
+      allocation[p].map(t => `<li>${t}</li>`).join('')
+    }</ol>`;
+    rg.appendChild(card);
+  });
+
+  const lines = ['🏆 *World Cup 2026 Sweepstake — Draw Result* 🏆', ''];
+  currentPlan.playerOrder.forEach(p => {
+    lines.push(`*${p}*`);
+    allocation[p].forEach(t => lines.push(`  • ${t}`));
+    lines.push('');
+  });
+  document.getElementById('copyBox').value = lines.join('\n').trim();
+}
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  const ta = document.getElementById('copyBox');
+  ta.select();
+  try { await navigator.clipboard.writeText(ta.value); }
+  catch (e) { document.execCommand('copy'); }
+  const btn = document.getElementById('copyBtn');
+  const old = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = old, 1500);
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  location.hash = '';
+  location.reload();
+});
+
+// ============ BOOT ============
+(function boot() {
+  const state = decodeState();
+  if (state) {
+    startViewerFlow(state);
+  } else {
+    initHostSetup();
+  }
+})();
+</script>
+</body>
+</html>
