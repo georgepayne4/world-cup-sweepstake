@@ -308,8 +308,7 @@
   <!-- ============ POT ANNOUNCEMENT OVERLAY ============ -->
   <div class="pot-announcement" id="potAnnouncement">
     <div class="pa-inner">
-      <div class="pa-pot" id="paPot">Pot 4</div>
-      <div class="pa-label" id="paLabel">OUTSIDERS</div>
+      <div class="pa-label" id="paLabel">POT 4</div>
     </div>
   </div>
 
@@ -330,10 +329,10 @@
 // ============ TEAM POOL ============
 // Pots tiered by FIFA World Ranking (April 2026) — 48 qualified teams sorted top to bottom.
 const POTS = {
-  "Pot 1 — Top Seeds":  ["France","Spain","Argentina","England","Portugal","Brazil","Netherlands","Morocco","Belgium","Germany","Croatia","Colombia"],
-  "Pot 2 — Strong":     ["Senegal","Mexico","USA","Uruguay","Japan","Switzerland","Iran","Türkiye","Ecuador","Austria","South Korea","Australia"],
-  "Pot 3 — Mid":        ["Algeria","Egypt","Canada","Norway","Panama","Ivory Coast","Sweden","Paraguay","Czechia","Scotland","Tunisia","DR Congo"],
-  "Pot 4 — Outsiders":  ["Uzbekistan","Qatar","Iraq","South Africa","Saudi Arabia","Jordan","Bosnia & Herzegovina","Cape Verde","Ghana","Curaçao","Haiti","New Zealand"]
+  "Pot 1": ["France","Spain","Argentina","England","Portugal","Brazil","Netherlands","Morocco","Belgium","Germany","Croatia","Colombia"],
+  "Pot 2": ["Senegal","Mexico","USA","Uruguay","Japan","Switzerland","Iran","Türkiye","Ecuador","Austria","South Korea","Australia"],
+  "Pot 3": ["Algeria","Egypt","Canada","Norway","Panama","Ivory Coast","Sweden","Paraguay","Czechia","Scotland","Tunisia","DR Congo"],
+  "Pot 4": ["Uzbekistan","Qatar","Iraq","South Africa","Saudi Arabia","Jordan","Bosnia & Herzegovina","Cape Verde","Ghana","Curaçao","Haiti","New Zealand"]
 };
 const POT_NAMES = Object.keys(POTS);
 const N_PLAYERS = 12;
@@ -345,9 +344,30 @@ const FLICKERS_PER_PICK = 8;
 const FLASH_MS = 700;                  // settle/flash animation after flicker
 const REVEAL_HOLD_MS = 3000;           // hold after reveal before next pick
 const PICK_TOTAL_MS = PLAYER_REVEAL_MS + FLICKER_MS * FLICKERS_PER_PICK + FLASH_MS + REVEAL_HOLD_MS;
+// Last pick of each pot — only one team left, so no suspense flicker.
+const SHORT_PLAYER_REVEAL_MS = 500;
+const SHORT_HOLD_MS = 1500;
+const LAST_PICK_TOTAL_MS = SHORT_PLAYER_REVEAL_MS + FLASH_MS + SHORT_HOLD_MS;
 const POT_BREAK_MS = 3000;             // dramatic pot announcement + pause
 const POT_ANN_VISIBLE_MS = 2800;       // pot announcement on-screen duration
 const TOTAL_PICKS = N_PLAYERS * POT_NAMES.length; // 48
+
+// Precomputed start offset + duration for each pick (deterministic, identical on every device).
+const TIMINGS = (() => {
+  const offsets = [];
+  const durations = [];
+  let t = 0;
+  for (let i = 0; i < TOTAL_PICKS; i++) {
+    if (i % N_PLAYERS === 0) t += POT_BREAK_MS;  // announcement before first pick of each pot
+    offsets.push(t);
+    const isLastOfPot = (i % N_PLAYERS) === (N_PLAYERS - 1);
+    const dur = isLastOfPot ? LAST_PICK_TOTAL_MS : PICK_TOTAL_MS;
+    durations.push(dur);
+    t += dur;
+  }
+  return { offsets, durations };
+})();
+function isLastPickOfPot(idx) { return (idx % N_PLAYERS) === (N_PLAYERS - 1); }
 
 // ============ SEEDED RNG (mulberry32) ============
 function mulberry32(seed) {
@@ -395,23 +415,29 @@ function decodeState() {
 
 // ============ DRAW PLAN (deterministic from seed + players) ============
 // Queue is built in REVERSE pot order (Pot 4 → Pot 1) for dramatic reveal.
-// Each queue item carries the original potIdx so results can be sorted
-// back into top-seed-down order when displaying.
+// Each pot has its OWN shuffled player order so the same player isn't always
+// drawn first. Each queue item carries the original potIdx so per-player
+// results can be sorted back into top-seed-down order when displaying.
 function buildDrawPlan(players, seed) {
   const rng = mulberry32(seed);
-  const playerOrder = seededShuffle(players, rng);
-  const potShuffles = {};
-  POT_NAMES.forEach(pn => { potShuffles[pn] = seededShuffle(POTS[pn], rng); });
+  const playerOrders = {};   // per-pot player order
+  const potShuffles = {};    // per-pot team shuffle
+  POT_NAMES.forEach(pn => {
+    playerOrders[pn] = seededShuffle(players, rng);
+    potShuffles[pn] = seededShuffle(POTS[pn], rng);
+  });
 
   const queue = [];
   const reversedPots = [...POT_NAMES].reverse();
   reversedPots.forEach(pn => {
     const potIdx = POT_NAMES.indexOf(pn);  // original index (0 = Pot 1)
-    playerOrder.forEach((player, i) => {
+    playerOrders[pn].forEach((player, i) => {
       queue.push({ pot: pn, potIdx, player, team: potShuffles[pn][i] });
     });
   });
-  return { playerOrder, potShuffles, queue };
+  // "playerOrder" kept for back-compat (uses the first-drawn pot's order).
+  const playerOrder = playerOrders[POT_NAMES[POT_NAMES.length - 1]];
+  return { playerOrder, playerOrders, potShuffles, queue };
 }
 
 // ============ HOST SETUP ============
@@ -599,24 +625,12 @@ function renderPotsView() {
   });
 }
 
-// Timing layout per pick (offsets from pick start):
-//   0                            → show player name (pops)
-//   PLAYER_REVEAL_MS             → flicker starts
-//   PLAYER_REVEAL_MS + flickerTotal → team reveal (flash starts)
-//   PLAYER_REVEAL_MS + flickerTotal + FLASH_MS → start REVEAL_HOLD_MS
-//   PICK_TOTAL_MS                → next pick starts
-// And BEFORE the first pick of each pot, a POT_BREAK_MS announcement plays.
-function pickStartOffset(idx) {
-  // (pots completed before this pick) * POT_BREAK_MS + (announcement before THIS pot)
-  const potIndex = Math.floor(idx / N_PLAYERS);
-  const numAnnouncements = potIndex + 1; // 1 before pot 1, 2 before pot 2, etc.
-  return numAnnouncements * POT_BREAK_MS + idx * PICK_TOTAL_MS;
-}
+// Lookups into the precomputed timing table.
+function pickStartOffset(idx) { return TIMINGS.offsets[idx]; }
+function pickDuration(idx)    { return TIMINGS.durations[idx]; }
 
 function showPotAnnouncement(potName) {
-  const parts = potName.split('—').map(s => s.trim());
-  document.getElementById('paPot').textContent = parts[0] || potName;
-  document.getElementById('paLabel').textContent = (parts[1] || '').toUpperCase();
+  document.getElementById('paLabel').textContent = potName.toUpperCase();
   const el = document.getElementById('potAnnouncement');
   el.classList.remove('show');
   // Force reflow so animation restarts
@@ -632,12 +646,10 @@ function showDraw(startMs) {
   const allocation = {};
   currentPlan.playerOrder.forEach(p => allocation[p] = []);
 
-  const flickerTotal = FLICKER_MS * FLICKERS_PER_PICK;
-
   let completedIdx = -1;
   for (let i = 0; i < TOTAL_PICKS; i++) {
-    // Pick is "done" once the reveal hold completes
-    const doneAt = pickStartOffset(i) + PLAYER_REVEAL_MS + flickerTotal + FLASH_MS + REVEAL_HOLD_MS;
+    // Pick is "done" once its full duration has elapsed (incl. hold)
+    const doneAt = pickStartOffset(i) + pickDuration(i);
     if (elapsed >= doneAt) completedIdx = i;
     else break;
   }
@@ -693,14 +705,34 @@ function runPick(startMs, idx, allocation) {
   revealEl.textContent = '';
   revealEl.classList.remove('show');
 
-  // Wait for player-name beat, then start flicker
-  setTimeout(() => startFlicker(startMs, idx, allocation, item), PLAYER_REVEAL_MS);
+  if (isLastPickOfPot(idx)) {
+    // Last team in this pot — no suspense, reveal straight after player name.
+    setTimeout(() => revealTeam(startMs, idx, allocation, item), SHORT_PLAYER_REVEAL_MS);
+  } else {
+    setTimeout(() => startFlicker(startMs, idx, allocation, item), PLAYER_REVEAL_MS);
+  }
+}
+
+function revealTeam(startMs, idx, allocation, item) {
+  const potSel = `#potsView li[data-pot="${CSS.escape(item.pot)}"]`;
+  const revealEl = document.getElementById('revealTeam');
+  const li = document.querySelector(`${potSel}[data-team="${CSS.escape(item.team)}"]`);
+  if (li) {
+    li.classList.add('just-picked');
+    setTimeout(() => {
+      li.classList.remove('just-picked');
+      li.classList.add('drawn');
+    }, FLASH_MS);
+  }
+  revealEl.textContent = item.team;
+  requestAnimationFrame(() => revealEl.classList.add('show'));
+  allocation[item.player].push(item.team);
+  scheduleNextPick(startMs, idx + 1, allocation);
 }
 
 function startFlicker(startMs, idx, allocation, item) {
   const potSel = `#potsView li[data-pot="${CSS.escape(item.pot)}"]`;
   const remaining = Array.from(document.querySelectorAll(`${potSel}:not(.drawn)`));
-  const revealEl = document.getElementById('revealTeam');
 
   let flickers = 0;
   const rng = mulberry32((currentState.seed ^ (idx * 0x9E3779B1)) >>> 0);
@@ -713,19 +745,7 @@ function startFlicker(startMs, idx, allocation, item) {
     } else {
       clearInterval(flickerInterval);
       remaining.forEach(li => li.classList.remove('picking'));
-      const li = document.querySelector(`${potSel}[data-team="${CSS.escape(item.team)}"]`);
-      if (li) {
-        li.classList.add('just-picked');
-        setTimeout(() => {
-          li.classList.remove('just-picked');
-          li.classList.add('drawn');
-        }, FLASH_MS);
-      }
-      revealEl.textContent = item.team;
-      requestAnimationFrame(() => revealEl.classList.add('show'));
-      allocation[item.player].push(item.team);
-
-      scheduleNextPick(startMs, idx + 1, allocation);
+      revealTeam(startMs, idx, allocation, item);
     }
   }, FLICKER_MS);
 }
