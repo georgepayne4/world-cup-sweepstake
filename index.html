@@ -241,6 +241,30 @@
     width: 18px; margin-right: 6px;
   }
   .player-chip img.team-flag { width: 16px; margin-right: 4px; }
+
+  /* Voice toggle (top-right floating) */
+  .voice-toggle {
+    position: fixed; top: 14px; right: 14px; z-index: 200;
+    background: rgba(0,0,0,0.45);
+    color: var(--cream);
+    border: 1px solid rgba(212,162,76,0.5);
+    border-radius: 22px;
+    padding: 7px 14px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: transform .15s, background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .voice-toggle:hover { background: rgba(0,0,0,0.65); transform: translateY(-1px); }
+  .voice-toggle.off { opacity: 0.55; }
+
+  /* Confetti canvas */
+  .confetti-canvas {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 1000;
+  }
   .stage .pot-label {
     color: var(--gold-light); font-size: 12px;
     letter-spacing: 3px; text-transform: uppercase;
@@ -313,6 +337,8 @@
 </style>
 </head>
 <body>
+<button id="voiceToggle" class="voice-toggle" type="button" aria-label="Toggle voice announcements">🔊 Voice on</button>
+
 <div class="wrap">
   <header>
     <h1><span class="accent">⚽</span> World Cup 2026 Sweepstake <span class="accent">⚽</span></h1>
@@ -723,6 +749,7 @@ function showPotAnnouncement(potName) {
   // Force reflow so animation restarts
   void el.offsetWidth;
   el.classList.add('show');
+  speak(potName);
 }
 
 function showDraw(startMs) {
@@ -791,6 +818,9 @@ function runPick(startMs, idx, allocation) {
   void stage.offsetWidth;        // force reflow so the animation re-fires
   stage.classList.add('open');
 
+  // Announce player name (slight delay so it lands after the ball-open animation begins)
+  setTimeout(() => speak(item.player), 200);
+
   const revealEl = document.getElementById('revealTeam');
   revealEl.innerHTML = '';
   revealEl.classList.remove('show');
@@ -816,6 +846,7 @@ function revealTeam(startMs, idx, allocation, item) {
   }
   revealEl.innerHTML = `${flagImg(item.team, 80, 'reveal-flag')}<span>${item.team}</span>`;
   requestAnimationFrame(() => revealEl.classList.add('show'));
+  speak(item.team);
   allocation[item.player].push(item.team);
   scheduleNextPick(startMs, idx + 1, allocation);
 }
@@ -843,6 +874,7 @@ function startFlicker(startMs, idx, allocation, item) {
 function showResults(allocation) {
   document.getElementById('drawScreen').classList.add('hidden');
   document.getElementById('results').classList.remove('hidden');
+  fireConfetti();
 
   // Players alphabetical (case-insensitive). Per-player teams sorted Pot 1 → Pot 4.
   const sortedPlayers = currentPlan.playerOrder.slice().sort(
@@ -890,6 +922,122 @@ document.getElementById('restartBtn').addEventListener('click', () => {
   location.hash = '';
   location.reload();
 });
+
+// ============ VOICE ANNOUNCEMENTS ============
+const VOICE_KEY = 'wcsweep-voice';
+let voiceEnabled = localStorage.getItem(VOICE_KEY) !== '0'; // default ON
+let voiceUnlocked = false;
+
+function unlockVoice() {
+  if (voiceUnlocked || !window.speechSynthesis) return;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+    voiceUnlocked = true;
+  } catch (e) {}
+}
+document.addEventListener('click', unlockVoice, { once: true, capture: true });
+document.addEventListener('touchstart', unlockVoice, { once: true, capture: true });
+
+function speak(text) {
+  if (!voiceEnabled || !window.speechSynthesis) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+function updateVoiceToggle() {
+  const btn = document.getElementById('voiceToggle');
+  if (!btn) return;
+  if (voiceEnabled) {
+    btn.textContent = '🔊 Voice on';
+    btn.classList.remove('off');
+  } else {
+    btn.textContent = '🔇 Voice off';
+    btn.classList.add('off');
+  }
+}
+
+document.getElementById('voiceToggle').addEventListener('click', () => {
+  voiceEnabled = !voiceEnabled;
+  localStorage.setItem(VOICE_KEY, voiceEnabled ? '1' : '0');
+  if (!voiceEnabled && window.speechSynthesis) speechSynthesis.cancel();
+  updateVoiceToggle();
+  if (voiceEnabled) speak('Voice on'); // sample so user can hear
+});
+updateVoiceToggle();
+
+// ============ CONFETTI ============
+function fireConfetti() {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const resize = () => {
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    canvas.style.width = innerWidth + 'px';
+    canvas.style.height = innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const colors = ['#D4A24C','#F2D89A','#1B6B43','#2E8B57','#FBF7EE','#C03A2B','#1F4E8C','#E07B27'];
+  const cx = innerWidth / 2;
+  const cy = innerHeight / 3;
+  const particles = [];
+  for (let i = 0; i < 220; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 6 + Math.random() * 14;
+    particles.push({
+      x: cx + (Math.random() - 0.5) * 40,
+      y: cy + (Math.random() - 0.5) * 40,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 8 - Math.random() * 4,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 0.35,
+      size: 6 + Math.random() * 7,
+      ratio: 0.3 + Math.random() * 0.4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+
+  const DURATION = 4500;
+  const start = performance.now();
+  function tick(now) {
+    const elapsed = now - start;
+    if (elapsed > DURATION) {
+      canvas.remove();
+      window.removeEventListener('resize', resize);
+      return;
+    }
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    const fade = Math.max(0, 1 - elapsed / DURATION);
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.32;     // gravity
+      p.vx *= 0.992;
+      p.rot += p.vrot;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = fade;
+      ctx.fillRect(-p.size / 2, -p.size * p.ratio / 2, p.size, p.size * p.ratio);
+      ctx.restore();
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
 
 // ============ BOOT ============
 (function boot() {
