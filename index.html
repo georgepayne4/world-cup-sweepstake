@@ -178,6 +178,69 @@
     60%  { opacity: 1; transform: scale(1.08) translateY(0); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
   }
+
+  /* Champions-League-style football reveal */
+  .football-stage {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; min-height: 90px; margin: 4px 0; position: relative;
+  }
+  .ball-half {
+    font-size: clamp(54px, 9vw, 80px);
+    line-height: 1; display: inline-block;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    will-change: transform;
+  }
+  /* Closed state: each half clipped to a semicircle and translated so they overlap into one ball */
+  .ball-half.left  { clip-path: inset(0 50% 0 0); transform: translateX(50%) rotate(-5deg); }
+  .ball-half.right { clip-path: inset(0 0 0 50%); transform: translateX(-50%) rotate(5deg); }
+  /* Open state: halves slide apart, slight rotation for crack-open feel */
+  .football-stage.open .ball-half.left {
+    animation: ballOpenLeft 0.55s cubic-bezier(.4,1.5,.5,1) forwards;
+  }
+  .football-stage.open .ball-half.right {
+    animation: ballOpenRight 0.55s cubic-bezier(.4,1.5,.5,1) forwards;
+  }
+  @keyframes ballOpenLeft {
+    0%   { transform: translateX(50%) rotate(-5deg); }
+    60%  { transform: translateX(-10%) rotate(-25deg); }
+    100% { transform: translateX(0%) rotate(-15deg); }
+  }
+  @keyframes ballOpenRight {
+    0%   { transform: translateX(-50%) rotate(5deg); }
+    60%  { transform: translateX(10%) rotate(25deg); }
+    100% { transform: translateX(0%) rotate(15deg); }
+  }
+  .football-stage .player-name {
+    margin: 0 18px;
+    opacity: 0;
+    transform: scale(0.4);
+    min-width: 0;
+  }
+  .football-stage.open .player-name {
+    animation: nameOutOfBall 0.55s 0.18s cubic-bezier(.3,1.7,.5,1) forwards;
+  }
+  @keyframes nameOutOfBall {
+    0%   { opacity: 0; transform: scale(0.4); }
+    65%  { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Country flags */
+  .team-flag {
+    width: 22px; height: auto; vertical-align: middle;
+    margin-right: 8px; border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+  }
+  .reveal-flag {
+    width: clamp(40px, 7vw, 56px); height: auto; vertical-align: middle;
+    margin-right: 14px; border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.2);
+  }
+  .stage .reveal-team { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
+  .player-card li img.team-flag {
+    width: 18px; margin-right: 6px;
+  }
+  .player-chip img.team-flag { width: 16px; margin-right: 4px; }
   .stage .pot-label {
     color: var(--gold-light); font-size: 12px;
     letter-spacing: 3px; text-transform: uppercase;
@@ -299,7 +362,11 @@
     <h2>Live draw</h2>
     <div class="stage">
       <div class="pot-label" id="potLabel">—</div>
-      <div class="player-name" id="currentPlayer">—</div>
+      <div class="football-stage" id="footballStage">
+        <span class="ball-half left">⚽</span>
+        <span class="player-name" id="currentPlayer"></span>
+        <span class="ball-half right">⚽</span>
+      </div>
       <div class="reveal-team" id="revealTeam"></div>
     </div>
     <div class="pots" id="potsView"></div>
@@ -327,6 +394,26 @@
 
 <script>
 // ============ TEAM POOL ============
+// ISO 3166 country codes for flag images (flagcdn.com). UK constituents use gb-* subdivisions.
+const TEAM_CODES = {
+  "France":"fr","Spain":"es","Argentina":"ar","England":"gb-eng","Portugal":"pt","Brazil":"br",
+  "Netherlands":"nl","Morocco":"ma","Belgium":"be","Germany":"de","Croatia":"hr","Colombia":"co",
+  "Senegal":"sn","Mexico":"mx","USA":"us","Uruguay":"uy","Japan":"jp","Switzerland":"ch",
+  "Iran":"ir","Türkiye":"tr","Ecuador":"ec","Austria":"at","South Korea":"kr","Australia":"au",
+  "Algeria":"dz","Egypt":"eg","Canada":"ca","Norway":"no","Panama":"pa","Ivory Coast":"ci",
+  "Sweden":"se","Paraguay":"py","Czechia":"cz","Scotland":"gb-sct","Tunisia":"tn","DR Congo":"cd",
+  "Uzbekistan":"uz","Qatar":"qa","Iraq":"iq","South Africa":"za","Saudi Arabia":"sa","Jordan":"jo",
+  "Bosnia & Herzegovina":"ba","Cape Verde":"cv","Ghana":"gh","Curaçao":"cw","Haiti":"ht","New Zealand":"nz"
+};
+function flagUrl(team, w) {
+  const code = TEAM_CODES[team];
+  return code ? `https://flagcdn.com/w${w}/${code}.png` : '';
+}
+function flagImg(team, w, cls = 'team-flag') {
+  const url = flagUrl(team, w);
+  return url ? `<img class="${cls}" src="${url}" alt="" loading="lazy">` : '';
+}
+
 // Pots tiered by FIFA World Ranking (April 2026) — 48 qualified teams sorted top to bottom.
 const POTS = {
   "Pot 1": ["France","Spain","Argentina","England","Portugal","Brazil","Netherlands","Morocco","Belgium","Germany","Croatia","Colombia"],
@@ -616,7 +703,7 @@ function renderPotsView() {
     const ul = div.querySelector('ul');
     POTS[pn].forEach(team => {
       const li = document.createElement('li');
-      li.textContent = team;
+      li.innerHTML = `${flagImg(team, 40)}<span>${team}</span>`;
       li.dataset.team = team;
       li.dataset.pot = pn;
       ul.appendChild(li);
@@ -693,16 +780,19 @@ function scheduleNextPick(startMs, idx, allocation) {
 function runPick(startMs, idx, allocation) {
   const item = currentPlan.queue[idx];
 
-  // Set pot label + player name (player name pops in)
+  // Pot label
   document.getElementById('potLabel').textContent = item.pot;
+
+  // Football stage: reset to closed, then open with the player name inside
+  const stage = document.getElementById('footballStage');
   const playerEl = document.getElementById('currentPlayer');
+  stage.classList.remove('open');
   playerEl.textContent = item.player;
-  playerEl.classList.remove('pop');
-  void playerEl.offsetWidth;
-  playerEl.classList.add('pop');
+  void stage.offsetWidth;        // force reflow so the animation re-fires
+  stage.classList.add('open');
 
   const revealEl = document.getElementById('revealTeam');
-  revealEl.textContent = '';
+  revealEl.innerHTML = '';
   revealEl.classList.remove('show');
 
   if (isLastPickOfPot(idx)) {
@@ -724,7 +814,7 @@ function revealTeam(startMs, idx, allocation, item) {
       li.classList.add('drawn');
     }, FLASH_MS);
   }
-  revealEl.textContent = item.team;
+  revealEl.innerHTML = `${flagImg(item.team, 80, 'reveal-flag')}<span>${item.team}</span>`;
   requestAnimationFrame(() => revealEl.classList.add('show'));
   allocation[item.player].push(item.team);
   scheduleNextPick(startMs, idx + 1, allocation);
@@ -771,7 +861,7 @@ function showResults(allocation) {
     card.className = 'player-card';
     const teams = (teamsByPlayer[p] || []).map(q => q.team);
     card.innerHTML = `<div class="name">${p}</div><ol>${
-      teams.map(t => `<li>${t}</li>`).join('')
+      teams.map(t => `<li>${flagImg(t, 40)}${t}</li>`).join('')
     }</ol>`;
     rg.appendChild(card);
   });

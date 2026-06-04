@@ -78,6 +78,15 @@ for (const t of MUST_HAVE) {
 }
 check('all confirmed qualifiers present', presentOk, missingNotable.join(', '));
 
+console.log('\n── Flag code coverage ──');
+const codeMatch = html.match(/const TEAM_CODES = \{[\s\S]*?\};/);
+let codes = {};
+if (codeMatch) codes = (new Function(codeMatch[0] + '\nreturn TEAM_CODES;'))();
+const missingCodes = inPots.filter(t => !codes[t]);
+check('every team has a flag code', missingCodes.length === 0, missingCodes.join(', '));
+check('no orphan flag codes', Object.keys(codes).every(k => inPotsSet.has(k)),
+  Object.keys(codes).filter(k => !inPotsSet.has(k)).join(', '));
+
 console.log('\n──────────────────────────');
 if (failures === 0) {
   console.log('ALL CHECKS PASSED ✓ — team pool matches the actual 48-team World Cup field');
