@@ -1,14 +1,23 @@
-"""Generate the World Cup Sweepstake one-page comprehensive PDF.
+"""Generate the World Cup Sweepstake announcement PDF (one-page poster).
 
-Single A4 page with: header, prize categories, draw rules, full 48-team pool
-sorted into 4 ranking-based tiers.
+Designed to be saved as an image and shared. Hero Trionda ball,
+draw night info, £15 buy-in prize breakdown.
 """
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.lib.units import cm, mm
+from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
-OUT = "World_Cup_Sweepstake.pdf"
+OUT = "World_Cup_Sweepstake_Announcement.pdf"
+BALL_IMG = "assets/trionda.jpg"
+
+# Event details
+DRAW_DATE = "MONDAY 8 JUNE 2026"
+DRAW_TIME = "8:30PM"
+BUY_IN = 15
+N_PLAYERS = 12
+POT_TOTAL = BUY_IN * N_PLAYERS  # £180
 
 # Palette
 GREEN_DARK = colors.HexColor("#0B3B2E")
@@ -24,220 +33,160 @@ PURPLE = colors.HexColor("#6B3FA0")
 ORANGE = colors.HexColor("#E07B27")
 
 PRIZES = [
-    ("Tournament Winner",            "60%", "Team that lifts the trophy.",                                        GOLD),
-    ("Runner-up",                    "20%", "Team that loses the final.",                                         GREEN_LIGHT),
-    ("Most Cards (points)",          "5%",  "Highest team card points across the tournament. Y=1pt, R=3pt.",      RED),
-    ("First Red Card",               "5%",  "First red shown in any match of the tournament.",                    BLUE),
-    ("Fastest Goal",                 "5%",  "Earliest goal of the tournament by match clock.",                    PURPLE),
-    ("Highest-Scoring Match",        "5%",  "Higher scorer in the match with most combined goals (pens excl.).",  ORANGE),
-]
-
-POTS = [
-    ("Pot 1 — Top Seeds",  ["France","Spain","Argentina","England","Portugal","Brazil","Netherlands","Morocco","Belgium","Germany","Croatia","Colombia"],                GOLD),
-    ("Pot 2 — Strong",     ["Senegal","Mexico","USA","Uruguay","Japan","Switzerland","Iran","Türkiye","Ecuador","Austria","South Korea","Australia"],                   GREEN_LIGHT),
-    ("Pot 3 — Mid",        ["Algeria","Egypt","Canada","Norway","Panama","Ivory Coast","Sweden","Paraguay","Czechia","Scotland","Tunisia","DR Congo"],                  BLUE),
-    ("Pot 4 — Outsiders",  ["Uzbekistan","Qatar","Iraq","South Africa","Saudi Arabia","Jordan","Bosnia & Herzegovina","Cape Verde","Ghana","Curaçao","Haiti","New Zealand"], PURPLE),
+    ("Tournament Winner",       0.60, GOLD),
+    ("Runner-up",               0.20, GREEN_LIGHT),
+    ("Most Cards (Y=1, R=3)",   0.05, RED),
+    ("First Red Card",          0.05, BLUE),
+    ("Fastest Goal",            0.05, PURPLE),
+    ("Highest-Scoring Match",   0.05, ORANGE),
 ]
 
 
 def draw_background(c, w, h):
+    # Cream backdrop
     c.setFillColor(CREAM)
     c.rect(0, 0, w, h, stroke=0, fill=1)
 
-
-def draw_header(c, w, h):
-    band_h = 3.0 * cm
-    # Solid green band
+    # Top hero band — solid dark green with diagonal pitch stripes
+    band_h = 11.0 * cm
     c.setFillColor(GREEN_DARK)
     c.rect(0, h - band_h, w, band_h, stroke=0, fill=1)
-    # Decorative diagonal stripes
-    c.saveState()
+    # Diagonal pitch stripes
     c.setFillColor(GREEN_PITCH)
     for i in range(-2, 30):
-        c.beginPath()
         p = c.beginPath()
-        x = i * 0.8 * cm
+        x = i * 1.0 * cm
         p.moveTo(x, h - band_h)
-        p.lineTo(x + 0.4 * cm, h - band_h)
-        p.lineTo(x + 0.4 * cm + 1.0 * cm, h)
-        p.lineTo(x + 1.0 * cm, h)
+        p.lineTo(x + 0.5 * cm, h - band_h)
+        p.lineTo(x + 0.5 * cm + 1.6 * cm, h)
+        p.lineTo(x + 1.6 * cm, h)
         p.close()
         c.drawPath(p, stroke=0, fill=1)
-    c.restoreState()
-    # Gold rule below
+    # Gold rule under hero
     c.setFillColor(GOLD)
     c.rect(0, h - band_h - 0.15 * cm, w, 0.15 * cm, stroke=0, fill=1)
 
-    # Title
+    # Bottom band
+    c.setFillColor(GREEN_DARK)
+    c.rect(0, 0, w, 1.4 * cm, stroke=0, fill=1)
+    c.setFillColor(GOLD)
+    c.rect(0, 1.4 * cm, w, 0.1 * cm, stroke=0, fill=1)
+
+
+def draw_hero(c, w, h):
+    # Big title in the hero band
     c.setFillColor(CREAM)
-    c.setFont("Helvetica-Bold", 24)
-    c.drawCentredString(w / 2, h - 1.4 * cm, "FIFA WORLD CUP 2026 SWEEPSTAKE")
+    c.setFont("Helvetica-Bold", 28)
+    c.drawCentredString(w / 2, h - 2.0 * cm, "FIFA WORLD CUP 2026")
     c.setFillColor(GOLD_LIGHT)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(w / 2, h - 2.25 * cm, "12 PLAYERS  ·  4 TEAMS EACH  ·  6 WAYS TO WIN")
+    c.setFont("Helvetica-Bold", 34)
+    c.drawCentredString(w / 2, h - 3.5 * cm, "SWEEPSTAKE")
+
+    # Sub-banner
+    c.setFillColor(CREAM)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawCentredString(w / 2, h - 4.55 * cm, "·  DRAW NIGHT  ·")
+
+    # Date / time pill — entirely inside the hero band, above the ball
+    pill_w, pill_h = 13.0 * cm, 1.6 * cm
+    pill_x = (w - pill_w) / 2
+    pill_y = h - 6.45 * cm
+    c.setFillColor(GOLD)
+    c.roundRect(pill_x, pill_y, pill_w, pill_h, 0.32 * cm, stroke=0, fill=1)
+    c.setFillColor(GREEN_DARK)
+    c.setFont("Helvetica-Bold", 17)
+    c.drawCentredString(w / 2, pill_y + 0.48 * cm, f"{DRAW_DATE}  ·  {DRAW_TIME}")
+
+
+def draw_ball(c, w, h):
+    # Trionda ball straddles the hero/cream boundary (below the date pill)
+    ball_size = 6.0 * cm
+    cx = w / 2
+    cy = h - 11.0 * cm   # centred on the gold rule (band_h = 11)
+    ball_x = cx - ball_size / 2
+    ball_y = cy - ball_size / 2
+
+    # White circular halo behind ball (with gold ring)
+    halo_r = ball_size / 2 + 0.35 * cm
+    c.setFillColor(CREAM)
+    c.circle(cx, cy, halo_r, stroke=0, fill=1)
+    c.setStrokeColor(GOLD)
+    c.setLineWidth(2)
+    c.circle(cx, cy, halo_r, stroke=1, fill=0)
+
+    # Draw the ball image, clipped to a circle so the photo background is hidden
+    c.saveState()
+    p = c.beginPath()
+    p.circle(cx, cy, ball_size / 2)
+    c.clipPath(p, stroke=0, fill=0)
+    c.drawImage(ImageReader(BALL_IMG), ball_x, ball_y, width=ball_size, height=ball_size,
+                preserveAspectRatio=True, mask='auto')
+    c.restoreState()
+
+
+def draw_money_line(c, w, h, y):
+    # "£15 BUY-IN · £180 POT · 12 PLAYERS"
+    c.setFillColor(GREEN_DARK)
+    c.setFont("Helvetica-Bold", 18)
+    line = f"£{BUY_IN} BUY-IN     ·     £{POT_TOTAL} POT     ·     {N_PLAYERS} PLAYERS"
+    c.drawCentredString(w / 2, y, line)
+    # Decorative dividers
+    rule_y = y - 0.4 * cm
+    c.setFillColor(GOLD)
+    c.rect(w / 2 - 5.0 * cm, rule_y, 10.0 * cm, 0.06 * cm, stroke=0, fill=1)
+    return y - 1.2 * cm
 
 
 def draw_prizes(c, w, h, top_y):
-    # Section title
+    # Section header
     c.setFillColor(GREEN_DARK)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(1.5 * cm, top_y, "PRIZES")
+    c.setFont("Helvetica-Bold", 14)
+    c.drawCentredString(w / 2, top_y, "PRIZES")
     c.setFillColor(GOLD)
-    c.rect(1.5 * cm, top_y - 0.15 * cm, 2.0 * cm, 0.08 * cm, stroke=0, fill=1)
+    c.rect(w / 2 - 1.5 * cm, top_y - 0.2 * cm, 3.0 * cm, 0.08 * cm, stroke=0, fill=1)
 
+    rows_top = top_y - 0.9 * cm
     row_h = 1.05 * cm
-    pad_top = 0.5 * cm
-    table_top = top_y - pad_top
-    left = 1.5 * cm
-    right = w - 1.5 * cm
-    badge_w = 2.0 * cm
+    left = 2.0 * cm
+    right = w - 2.0 * cm
+    badge_w = 2.2 * cm
 
-    for i, (name, pct, desc, color) in enumerate(PRIZES):
-        y = table_top - i * row_h
+    for i, (name, pct, color) in enumerate(PRIZES):
+        y = rows_top - i * row_h
+        amount = int(round(POT_TOTAL * pct))
+
         # Row background
-        c.setFillColor(colors.HexColor("#FFFFFF") if i % 2 == 0 else colors.HexColor("#F4EFE0"))
-        c.roundRect(left, y - row_h + 0.15 * cm, right - left, row_h - 0.2 * cm,
-                    0.15 * cm, stroke=0, fill=1)
+        c.setFillColor(colors.white if i % 2 == 0 else colors.HexColor("#F4EFE0"))
+        c.roundRect(left, y - row_h + 0.18 * cm, right - left, row_h - 0.22 * cm,
+                    0.18 * cm, stroke=0, fill=1)
         # Color stripe
         c.setFillColor(color)
-        c.rect(left, y - row_h + 0.15 * cm, 0.22 * cm, row_h - 0.2 * cm, stroke=0, fill=1)
+        c.rect(left, y - row_h + 0.18 * cm, 0.22 * cm, row_h - 0.22 * cm, stroke=0, fill=1)
 
-        # Name
+        # Prize name
         c.setFillColor(INK)
-        c.setFont("Helvetica-Bold", 11.5)
-        c.drawString(left + 0.6 * cm, y - 0.35 * cm, name)
-        # Description
-        c.setFillColor(colors.HexColor("#3A4A40"))
-        c.setFont("Helvetica", 9)
-        c.drawString(left + 0.6 * cm, y - 0.78 * cm, desc)
-
-        # Pct badge
-        bx = right - badge_w - 0.1 * cm
-        by = y - row_h + 0.27 * cm
-        c.setFillColor(color)
-        c.roundRect(bx, by, badge_w, row_h - 0.45 * cm, 0.15 * cm, stroke=0, fill=1)
-        c.setFillColor(CREAM)
-        c.setFont("Helvetica-Bold", 15)
-        c.drawCentredString(bx + badge_w / 2, by + 0.28 * cm, pct)
-
-    return table_top - len(PRIZES) * row_h
-
-
-def draw_rules(c, w, h, top_y):
-    c.setFillColor(GREEN_DARK)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(1.5 * cm, top_y, "HOW THE DRAW WORKS")
-    c.setFillColor(GOLD)
-    c.rect(1.5 * cm, top_y - 0.15 * cm, 5.4 * cm, 0.08 * cm, stroke=0, fill=1)
-
-    items = [
-        ("1", "Randomise the 12 players into a draft order."),
-        ("2", "4 pots of 12 teams, tiered by FIFA ranking."),
-        ("3", "Each player draws one team from each pot."),
-        ("4", "Shared draw URL — everyone watches together."),
-    ]
-    block_top = top_y - 0.75 * cm
-    col_w = (w - 3.0 * cm) / 4
-    circle_r = 0.36 * cm
-
-    for i, (num, text) in enumerate(items):
-        x = 1.5 * cm + i * col_w
-        cx = x + col_w / 2
-        # Circle centered at top of cell
-        c.setFillColor(GREEN_PITCH)
-        c.circle(cx, block_top, circle_r, stroke=0, fill=1)
-        c.setFillColor(CREAM)
         c.setFont("Helvetica-Bold", 13)
-        c.drawCentredString(cx, block_top - 0.16 * cm, num)
+        c.drawString(left + 0.6 * cm, y - 0.55 * cm, name)
 
-        # Wrap text into lines that fit the column width (with margin)
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 9.5)
-        max_text_w = col_w - 0.6 * cm
-        words = text.split()
-        lines, cur = [], ""
-        for word in words:
-            test = (cur + " " + word).strip()
-            if c.stringWidth(test, "Helvetica", 9.5) > max_text_w and cur:
-                lines.append(cur); cur = word
-            else:
-                cur = test
-        if cur: lines.append(cur)
-        # Draw lines centered below circle
-        text_top = block_top - circle_r - 0.4 * cm
-        for li, line in enumerate(lines):
-            c.drawCentredString(cx, text_top - li * 0.34 * cm, line)
-
-    return block_top - circle_r - 0.4 * cm - 3 * 0.34 * cm
-
-
-def draw_teams(c, w, h, top_y):
-    c.setFillColor(GREEN_DARK)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(1.5 * cm, top_y, "TEAM POOL  ·  TIERED BY FIFA WORLD RANKING")
-    c.setFillColor(GOLD)
-    c.rect(1.5 * cm, top_y - 0.15 * cm, 9.5 * cm, 0.08 * cm, stroke=0, fill=1)
-
-    left = 1.5 * cm
-    right = w - 1.5 * cm
-    n_pots = 4
-    gap = 0.3 * cm
-    col_w = (right - left - gap * (n_pots - 1)) / n_pots
-
-    col_top = top_y - 0.65 * cm
-    header_h = 0.85 * cm
-    row_h = 0.62 * cm
-    col_h = header_h + 12 * row_h + 0.3 * cm
-
-    for i, (label, teams, color) in enumerate(POTS):
-        x = left + i * (col_w + gap)
-        # Card background
-        c.setFillColor(colors.white)
-        c.roundRect(x, col_top - col_h, col_w, col_h, 0.2 * cm, stroke=0, fill=1)
-        # Header
+        # £ badge — text colour chosen for contrast with the badge fill
+        bx = right - badge_w - 0.1 * cm
+        by = y - row_h + 0.32 * cm
+        bh = row_h - 0.5 * cm
         c.setFillColor(color)
-        c.roundRect(x, col_top - header_h, col_w, header_h, 0.2 * cm, stroke=0, fill=1)
-        # Cover bottom corners to make header a top-only rounded rect
-        c.rect(x, col_top - header_h, col_w, 0.2 * cm, stroke=0, fill=1)
-        c.setFillColor(CREAM)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(x + col_w / 2, col_top - 0.35 * cm, label.split("—")[0].strip())
-        c.setFont("Helvetica-Bold", 8)
-        c.setFillColor(colors.HexColor("#F8E9C8"))
-        c.drawCentredString(x + col_w / 2, col_top - 0.65 * cm, label.split("—")[1].strip().upper())
+        c.roundRect(bx, by, badge_w, bh, 0.18 * cm, stroke=0, fill=1)
+        text_color = INK if color == GOLD else CREAM
+        c.setFillColor(text_color)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawCentredString(bx + badge_w / 2, by + 0.18 * cm, f"£{amount}")
 
-        # Teams list
-        c.setFont("Helvetica", 9.2)
-        for j, team in enumerate(teams):
-            ty = col_top - header_h - 0.4 * cm - j * row_h
-            # Alternating row tint
-            if j % 2 == 1:
-                c.setFillColor(colors.HexColor("#F4EFE0"))
-                c.rect(x + 0.1 * cm, ty - 0.18 * cm, col_w - 0.2 * cm, row_h - 0.05 * cm, stroke=0, fill=1)
-            # Bullet
-            c.setFillColor(color)
-            c.circle(x + 0.4 * cm, ty - 0.02 * cm, 0.08 * cm, stroke=0, fill=1)
-            # Name
-            c.setFillColor(INK)
-            c.drawString(x + 0.65 * cm, ty - 0.07 * cm, team)
-        # Card border
-        c.setStrokeColor(colors.HexColor("#E0D8BF"))
-        c.setLineWidth(0.4)
-        c.roundRect(x, col_top - col_h, col_w, col_h, 0.2 * cm, stroke=1, fill=0)
-
-    return col_top - col_h - 0.4 * cm
+    return rows_top - len(PRIZES) * row_h
 
 
 def draw_footer(c, w, h):
-    band_h = 0.9 * cm
-    c.setFillColor(GREEN_DARK)
-    c.rect(0, 0, w, band_h, stroke=0, fill=1)
-    c.setFillColor(GOLD)
-    c.rect(0, band_h, w, 0.08 * cm, stroke=0, fill=1)
     c.setFillColor(CREAM)
-    c.setFont("Helvetica-Bold", 9)
-    c.drawCentredString(w / 2, band_h / 2 - 0.1 * cm,
-        "GROUP STAGE  ·  ROUND OF 32  ·  ROUND OF 16  ·  QUARTERS  ·  SEMIS  ·  FINAL    ·    GOOD LUCK!")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(w / 2, 0.55 * cm,
+        "12 PLAYERS  ·  4 TEAMS EACH  ·  6 WAYS TO WIN  ·  GOOD LUCK!")
 
 
 def build():
@@ -245,13 +194,13 @@ def build():
     c = canvas.Canvas(OUT, pagesize=A4)
 
     draw_background(c, w, h)
-    draw_header(c, w, h)
+    draw_hero(c, w, h)
+    draw_ball(c, w, h)
 
-    # Prizes block starts below header
-    y = h - 3.7 * cm
-    y = draw_prizes(c, w, h, y - 0.4 * cm)
-    y = draw_rules(c, w, h, y - 0.6 * cm)
-    y = draw_teams(c, w, h, y - 0.4 * cm)
+    # Money line below the ball (ball centre at h-11cm, halo extends ~3.5cm)
+    y = h - 15.5 * cm
+    y = draw_money_line(c, w, h, y)
+    y = draw_prizes(c, w, h, y - 0.7 * cm)
 
     draw_footer(c, w, h)
 

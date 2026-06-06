@@ -185,8 +185,12 @@
     gap: 0; min-height: 90px; margin: 4px 0; position: relative;
   }
   .ball-half {
-    font-size: clamp(54px, 9vw, 80px);
-    line-height: 1; display: inline-block;
+    width: clamp(64px, 10vw, 90px);
+    height: clamp(64px, 10vw, 90px);
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center;
+    display: inline-block;
     filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
     will-change: transform;
   }
@@ -369,9 +373,9 @@
     <div class="stage">
       <div class="pot-label" id="potLabel">—</div>
       <div class="football-stage" id="footballStage">
-        <span class="ball-half left">⚽</span>
+        <img class="ball-half left" src="assets/trionda-small.jpg" alt="">
         <span class="player-name" id="currentPlayer"></span>
-        <span class="ball-half right">⚽</span>
+        <img class="ball-half right" src="assets/trionda-small.jpg" alt="">
       </div>
       <div class="reveal-team" id="revealTeam"></div>
     </div>
