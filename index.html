@@ -8,20 +8,76 @@
   :root {
     --green-dark: #0b3b2e;
     --green-pitch: #1b6b43;
-    --gold: #d4a24c;
+    --green-pitch-dark: #0E4520;
+    --green-bright: #3EBA72;
+    --night: #06120D;
+    --night-green: #143527;
+    --gold: #E5C56F;
     --gold-light: #f2d89a;
     --cream: #fbf7ee;
     --ink: #0f1a14;
+    --tri-red:   #E1342B;
+    --tri-blue:  #1B5BB0;
+    --tri-green: #2EA663;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: radial-gradient(ellipse at top, #145138 0%, var(--green-dark) 60%, #051f17 100%);
+    background:
+      radial-gradient(ellipse at 50% 22%, var(--night-green) 0%, var(--night) 55%, #020705 100%);
     color: var(--cream);
     min-height: 100vh;
   }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 80px; }
+
+  /* Decorative tri-color swooshes behind the upper content */
+  .bg-swooshes {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 70vh; min-height: 460px;
+    pointer-events: none; z-index: 0;
+    opacity: 0.55;
+    mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+  }
+  .bg-swooshes svg { width: 100%; height: 100%; display: block; }
+
+  /* Grass pitch footer */
+  .grass-footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 60px;
+    pointer-events: none; z-index: 1;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        rgba(11,42,30,0.30) 1px,
+        transparent 2px,
+        transparent 6px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        rgba(62,186,114,0.18) 1px,
+        transparent 2px,
+        transparent 11px
+      ),
+      linear-gradient(to top,
+        var(--green-pitch-dark) 0%,
+        var(--green-pitch) 50%,
+        var(--green-bright) 100%);
+  }
+  .grass-footer::before {
+    content: '';
+    position: absolute; left: 0; right: 0; top: -3px; height: 3px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+  }
+  @media (max-width: 720px) {
+    .grass-footer { height: 40px; }
+  }
+
+  /* Ensure all real content sits above the decoration layers */
+  .wrap { position: relative; z-index: 5; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 100px; }
   header { text-align: center; padding: 18px 0 26px; }
   h1 { font-size: clamp(22px, 4vw, 34px); margin: 0 0 6px; letter-spacing: 1px; }
   h1 .accent { color: var(--gold-light); }
@@ -320,6 +376,35 @@
 </style>
 </head>
 <body>
+<!-- Decorative tri-color sweeps (background only) -->
+<div class="bg-swooshes" aria-hidden="true">
+  <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMin slice">
+    <defs>
+      <filter id="softblur" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="0.8"/>
+      </filter>
+    </defs>
+    <!-- Red sweep -->
+    <path d="M -60 220 C 200 90, 420 180, 600 200 S 920 280, 1080 240"
+          stroke="#E1342B" stroke-width="22" fill="none" opacity="0.55" filter="url(#softblur)"/>
+    <path d="M -60 220 C 200 90, 420 180, 600 200 S 920 280, 1080 240"
+          stroke="#E1342B" stroke-width="3" fill="none" opacity="0.85"/>
+    <!-- Blue sweep -->
+    <path d="M -60 320 C 240 380, 480 240, 700 280 S 960 380, 1080 340"
+          stroke="#1B5BB0" stroke-width="22" fill="none" opacity="0.50" filter="url(#softblur)"/>
+    <path d="M -60 320 C 240 380, 480 240, 700 280 S 960 380, 1080 340"
+          stroke="#1B5BB0" stroke-width="3" fill="none" opacity="0.85"/>
+    <!-- Green sweep -->
+    <path d="M -60 460 C 220 420, 460 460, 680 420 S 940 440, 1080 460"
+          stroke="#2EA663" stroke-width="22" fill="none" opacity="0.60" filter="url(#softblur)"/>
+    <path d="M -60 460 C 220 420, 460 460, 680 420 S 940 440, 1080 460"
+          stroke="#2EA663" stroke-width="3" fill="none" opacity="0.9"/>
+  </svg>
+</div>
+
+<!-- Pitch grass strip (decorative, always at viewport bottom) -->
+<div class="grass-footer" aria-hidden="true"></div>
+
 <div class="wrap">
   <header>
     <h1><span class="accent">⚽</span> World Cup 2026 Sweepstake <span class="accent">⚽</span></h1>
