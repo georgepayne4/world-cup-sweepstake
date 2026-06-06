@@ -8,11 +8,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
-from svglib.svglib import svg2rlg
-from reportlab.graphics import renderPDF
+from reportlab.lib.utils import ImageReader
 
 OUT = "World_Cup_Sweepstake_Announcement.pdf"
-BALL_SVG = "assets/ball.svg"
+BALL_PNG = "assets/trionda_clean_medium.png"
 
 # Event details
 DRAW_DATE = "MONDAY 8 JUNE 2026"
@@ -73,16 +72,13 @@ def draw_wave_footer(c, w, y, h):
 
 
 def draw_ball(c, w, h, cx, cy, size):
-    """Render the SVG ball centred at (cx, cy) with overall size in cm."""
-    drawing = svg2rlg(BALL_SVG)
-    # svglib drawing dimensions
-    sw = drawing.width
-    sh = drawing.height
-    scale = (size) / max(sw, sh)
-    drawing.width = sw * scale
-    drawing.height = sh * scale
-    drawing.scale(scale, scale)
-    renderPDF.draw(drawing, c, cx - drawing.width / 2, cy - drawing.height / 2)
+    """Render the Trionda ball PNG centred at (cx, cy) with size in cm."""
+    img = ImageReader(BALL_PNG)
+    iw, ih = img.getSize()
+    aspect = ih / iw
+    bw = size
+    bh = size * aspect
+    c.drawImage(img, cx - bw / 2, cy - bh / 2, width=bw, height=bh, mask='auto')
 
 
 def build():

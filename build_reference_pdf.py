@@ -7,11 +7,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
-from svglib.svglib import svg2rlg
-from reportlab.graphics import renderPDF
+from reportlab.lib.utils import ImageReader
 
 OUT = "World_Cup_Sweepstake_Reference.pdf"
-BALL_SVG = "assets/ball.svg"
+BALL_PNG = "assets/trionda_clean_medium.png"
 
 # Palette
 RED = colors.HexColor("#E1342B")
@@ -63,13 +62,12 @@ def draw_tri_underline(c, cx, y, total_w, h_=0.08*cm):
 
 
 def draw_ball(c, cx, cy, size):
-    drawing = svg2rlg(BALL_SVG)
-    sw, sh = drawing.width, drawing.height
-    scale = size / max(sw, sh)
-    drawing.width = sw * scale
-    drawing.height = sh * scale
-    drawing.scale(scale, scale)
-    renderPDF.draw(drawing, c, cx - drawing.width / 2, cy - drawing.height / 2)
+    img = ImageReader(BALL_PNG)
+    iw, ih = img.getSize()
+    aspect = ih / iw
+    bw = size
+    bh = size * aspect
+    c.drawImage(img, cx - bw / 2, cy - bh / 2, width=bw, height=bh, mask='auto')
 
 
 def draw_wave(c, w, y):
