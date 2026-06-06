@@ -41,15 +41,15 @@
   }
   .bg-swooshes svg { width: 100%; height: 100%; display: block; }
 
-  /* Grass pitch footer — real grass photo as background */
+  /* Grass pitch footer — seamless mirror-tiled grass photo */
   .grass-footer {
     position: fixed; bottom: 0; left: 0; right: 0;
-    height: 90px;
+    height: 110px;
     pointer-events: none; z-index: 1;
     background-image: url('assets/grass.jpg');
-    background-size: cover;
+    background-size: auto 100%;       /* preserve aspect, fill height */
     background-position: center bottom;
-    background-repeat: no-repeat;
+    background-repeat: repeat-x;       /* tile horizontally at native res */
     overflow: hidden;
   }
   /* Soft shadow above the grass for night-to-pitch transition */
@@ -67,12 +67,12 @@
     pointer-events: none;
   }
   @media (max-width: 720px) {
-    .grass-footer { height: 60px; }
+    .grass-footer { height: 70px; }
   }
 
   /* Ensure all real content sits above the decoration layers */
   .wrap { position: relative; z-index: 5; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 100px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 140px; }
   header { text-align: center; padding: 18px 0 26px; }
   h1 { font-size: clamp(22px, 4vw, 34px); margin: 0 0 6px; letter-spacing: 1px; }
   h1 .accent { color: var(--gold-light); }
