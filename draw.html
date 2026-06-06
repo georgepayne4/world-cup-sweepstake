@@ -185,13 +185,10 @@
     gap: 0; min-height: 90px; margin: 4px 0; position: relative;
   }
   .ball-half {
-    width: clamp(64px, 10vw, 90px);
-    height: clamp(64px, 10vw, 90px);
-    border-radius: 50%;
-    object-fit: cover;
-    object-position: center;
+    width: clamp(72px, 11vw, 100px);
+    height: clamp(72px, 11vw, 100px);
     display: inline-block;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
     will-change: transform;
   }
   /* Closed state: each half clipped to a semicircle and translated so they overlap into one ball */
@@ -373,9 +370,9 @@
     <div class="stage">
       <div class="pot-label" id="potLabel">—</div>
       <div class="football-stage" id="footballStage">
-        <img class="ball-half left" src="assets/trionda-small.jpg" alt="">
+        <img class="ball-half left" src="assets/ball.svg" alt="">
         <span class="player-name" id="currentPlayer"></span>
-        <img class="ball-half right" src="assets/trionda-small.jpg" alt="">
+        <img class="ball-half right" src="assets/ball.svg" alt="">
       </div>
       <div class="reveal-team" id="revealTeam"></div>
     </div>

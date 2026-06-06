@@ -1,0 +1,61 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Football">
+  <defs>
+    <radialGradient id="ballBase" cx="38%" cy="32%" r="82%">
+      <stop offset="0%"  stop-color="#ffffff"/>
+      <stop offset="65%" stop-color="#f6f6f6"/>
+      <stop offset="100%" stop-color="#bcbcbc"/>
+    </radialGradient>
+    <radialGradient id="ballShine" cx="32%" cy="28%" r="32%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="edgeShade" cx="50%" cy="50%" r="50%">
+      <stop offset="78%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.30"/>
+    </radialGradient>
+    <clipPath id="ballClip">
+      <circle cx="120" cy="120" r="115"/>
+    </clipPath>
+  </defs>
+
+  <!-- Soft drop shadow -->
+  <ellipse cx="120" cy="232" rx="80" ry="6" fill="#000" opacity="0.18"/>
+
+  <!-- Base sphere -->
+  <circle cx="120" cy="120" r="115" fill="url(#ballBase)" stroke="#444" stroke-width="2"/>
+
+  <!-- Three large tri-color wedges -->
+  <g clip-path="url(#ballClip)">
+    <!-- Red wedge: top → bottom-left -->
+    <path d="M 120 120 L 120 5
+             A 115 115 0 0 0 20.4 177.5 Z"
+          fill="#E1342B"/>
+    <!-- Blue wedge: top → bottom-right -->
+    <path d="M 120 120 L 120 5
+             A 115 115 0 0 1 219.6 177.5 Z"
+          fill="#1B5BB0"/>
+    <!-- Green wedge: bottom-right → bottom-left along the bottom arc -->
+    <path d="M 120 120 L 219.6 177.5
+             A 115 115 0 0 1 20.4 177.5 Z"
+          fill="#2EA663"/>
+
+    <!-- Central dark pentagon (classic football read) -->
+    <polygon points="120,100 138,113 131,134 109,134 102,113" fill="#1c1c1c"/>
+
+    <!-- Curved seam lines from pentagon vertices to ball edge along the wedge boundaries -->
+    <g fill="none" stroke="#1c1c1c" stroke-width="2.2" stroke-linecap="round">
+      <!-- Top seam: from top pentagon vertex up to ball top -->
+      <path d="M 120 100 Q 121 50 120 5"/>
+      <!-- Bottom-left seam: from bottom-left pentagon vertex to bottom-left of ball -->
+      <path d="M 109 134 Q 65 158 20.4 177.5"/>
+      <!-- Bottom-right seam: from bottom-right pentagon vertex to bottom-right of ball -->
+      <path d="M 131 134 Q 175 158 219.6 177.5"/>
+    </g>
+
+    <!-- Inner edge shading -->
+    <circle cx="120" cy="120" r="115" fill="url(#edgeShade)" pointer-events="none"/>
+  </g>
+
+  <!-- Specular highlight -->
+  <circle cx="120" cy="120" r="115" fill="url(#ballShine)" pointer-events="none"/>
+</svg>
