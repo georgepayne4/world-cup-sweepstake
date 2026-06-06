@@ -17,6 +17,8 @@ from brand import (
 )
 
 OUT = "World_Cup_Sweepstake_Announcement.pdf"
+OUT_JPG = "World_Cup_Sweepstake_Announcement.jpg"
+JPG_DPI = 220  # ~A4 at this DPI → ~1810x2560 px, plenty for sharing
 
 # Event details
 DRAW_DATE = "MONDAY 8 JUNE 2026"
@@ -148,6 +150,26 @@ def build():
     c.showPage()
     c.save()
     print(f"Wrote {OUT}")
+    render_jpg()
+
+
+def render_jpg():
+    """Render the PDF to a high-res JPG for sharing as an image."""
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        print("PyMuPDF not installed — skipping JPG render")
+        return
+    doc = fitz.open(OUT)
+    page = doc[0]
+    zoom = JPG_DPI / 72.0  # PDF native is 72 DPI
+    mat = fitz.Matrix(zoom, zoom)
+    pix = page.get_pixmap(matrix=mat, alpha=False)
+    pix.save(OUT_JPG, jpg_quality=92)
+    doc.close()
+    import os
+    size_kb = os.path.getsize(OUT_JPG) // 1024
+    print(f"Wrote {OUT_JPG} ({pix.width}x{pix.height}, {size_kb} KB)")
 
 
 if __name__ == "__main__":
