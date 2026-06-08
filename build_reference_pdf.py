@@ -23,7 +23,7 @@ PRIZES = [
     ("Tournament Winner",       "60%",  "Team that lifts the trophy.",                                          RED),
     ("Runner-up",               "20%",  "Team that loses the final.",                                           BLUE),
     ("Most Cards (points)",     "5%",   "Highest team card points across the tournament. Y = 1, R = 3.",        GREEN),
-    ("First Red Card",          "5%",   "First red shown in any match of the tournament.",                      RED),
+    ("First Red Card",          "5%",   "Earliest tournament round with any red; within that round the lowest match-clock minute wins.", RED),
     ("Fastest Goal",            "5%",   "Earliest goal of the tournament by match clock.",                      BLUE),
     ("Highest-Scoring Match",   "5%",   "Higher scorer in the match with most combined goals (pens excluded).", GREEN),
 ]
