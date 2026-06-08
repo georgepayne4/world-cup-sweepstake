@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# Tracker spreadsheet — contains real names and payment status; kept local only.
+World_Cup_Sweepstake_Tracker.xlsx
+~$World_Cup_Sweepstake_Tracker.xlsx
