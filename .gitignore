@@ -3,6 +3,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Tracker spreadsheet — contains real names and payment status; kept local only.
+# Files containing personal info (real names, paid status, allocations).
+# Kept locally, never tracked or pushed.
 World_Cup_Sweepstake_Tracker.xlsx
 ~$World_Cup_Sweepstake_Tracker.xlsx
+build_spreadsheet.py
